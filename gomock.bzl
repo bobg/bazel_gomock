@@ -175,6 +175,7 @@ def _gomock_prog_gen_impl(ctx):
 
     cmd = ctx.file.mockgen_tool
     out = ctx.actions.declare_file(ctx.label.name + "-gomock_gen-" + ctx.attr.out)
+    print("xxx out.path {}".format(out.path))
 
     ctx.actions.run_shell(
         outputs = [out],
