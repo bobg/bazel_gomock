@@ -26,11 +26,17 @@ def _gomock_source_impl(ctx):
         go_ctx.sdk.headers + go_ctx.sdk.srcs + go_ctx.sdk.tools
     ) + [ctx.file.source]
 
+    out_dir = ctx.actions.declare_directory(ctx.label.name + "-gomock_source.d")
+    ctx.actions.run_shell(outputs = [out_dir], arguments = [out_dir.path], command = "mkdir -v -m a+rwx -p $1")
+
+    out_name = ctx.attr.out
+    out = ctx.actions.declare_file(out_dir.path + "/" + out_name)
+
     # We can use the go binary from the stdlib for most of the environment
     # variables, but our GOPATH is specific to the library target we were given.
     ctx.actions.run_shell(
-        outputs = [ctx.outputs.out],
-        inputs = inputs,
+        outputs = [out],
+        inputs = inputs + [out_dir],
         tools = [
             ctx.file.mockgen_tool,
             go_ctx.go,
@@ -47,13 +53,15 @@ def _gomock_source_impl(ctx):
             gopath = gopath,
             cmd = "$(pwd)/" + ctx.file.mockgen_tool.path,
             args = " ".join(args),
-            out = ctx.outputs.out.path,
+            out = out.path,
             mnemonic = "GoMockSourceGen",
         ),
         env = {
             "GO111MODULE": "off",  # explicitly relying on passed in go_path to not download modules while doing codegen
         },
     )
+
+    return [DefaultInfo(files = depset([out]))]
 
 _gomock_source = go_rule(
     _gomock_source_impl,
@@ -68,7 +76,7 @@ _gomock_source = go_rule(
             mandatory = False,
             allow_single_file = True,
         ),
-        "out": attr.output(
+        "out": attr.string(
             doc = "The new Go file to emit the generated mocks into",
             mandatory = True,
         ),
@@ -154,7 +162,7 @@ def _gomock_reflect(name, library, out, mockgen_tool, **kwargs):
     prog_bin = name + "_gomock_prog_bin"
     go_binary(
         name = prog_bin,
-        srcs = [prog_src_out],
+        srcs = [":" + prog_src],
         deps = [library, mockgen_model_lib],
     )
     _gomock_prog_exec(
@@ -172,9 +180,16 @@ def _gomock_prog_gen_impl(ctx):
     args += [",".join(ctx.attr.interfaces)]
 
     cmd = ctx.file.mockgen_tool
-    out = ctx.outputs.out
+
+    out_dir = ctx.actions.declare_directory(ctx.label.name + "-gomock_prog_gen.d")
+    ctx.actions.run_shell(outputs = [out_dir], arguments = [out_dir.path], command = "mkdir -v -m a+rwx -p $1")
+
+    out_name = ctx.attr.out
+    out = ctx.actions.declare_file(out_dir.path + "/" + out_name)
+
     ctx.actions.run_shell(
         outputs = [out],
+        inputs = [out_dir],
         tools = [cmd],
         command = """
            {cmd} {args} > {out}
@@ -186,6 +201,8 @@ def _gomock_prog_gen_impl(ctx):
         mnemonic = "GoMockReflectProgOnlyGen"
     )
 
+    return [DefaultInfo(files = depset([out]))]
+
 _gomock_prog_gen = go_rule(
     _gomock_prog_gen_impl,
     attrs = {
@@ -194,7 +211,7 @@ _gomock_prog_gen = go_rule(
             providers = [GoLibrary],
             mandatory = True,
         ),
-        "out": attr.output(
+        "out": attr.string(
             doc = "The new Go source file put the mock generator code",
             mandatory = True,
         ),
@@ -223,14 +240,20 @@ def _gomock_prog_exec_impl(ctx):
     args += [ctx.attr.library[GoLibrary].importpath]
     args += [",".join(ctx.attr.interfaces)]
 
+    out_dir = ctx.actions.declare_directory(ctx.label.name + "-gomock_prog_exec.d")
+    ctx.actions.run_shell(outputs = [out_dir], arguments = [out_dir.path], command = "mkdir -v -m a+rwx -p $1")
+
+    out_name = ctx.attr.out
+    out = ctx.actions.declare_file(out_dir.path + "/" + out_name)
+
     ctx.actions.run_shell(
-        outputs = [ctx.outputs.out],
-        inputs = [ctx.file.prog_bin] + needed_files,
+        outputs = [out],
+        inputs = [ctx.file.prog_bin] + needed_files + [out_dir],
         tools = [ctx.file.mockgen_tool],
         command = """{cmd} {args} > {out}""".format(
             cmd = "$(pwd)/" + ctx.file.mockgen_tool.path,
             args = " ".join(args),
-            out = ctx.outputs.out.path,
+            out = out.path,
         ),
         env = {
             # GOCACHE is required starting in Go 1.12
@@ -238,6 +261,8 @@ def _gomock_prog_exec_impl(ctx):
         },
         mnemonic = "GoMockReflectExecOnlyGen",
     )
+
+    return [DefaultInfo(files = depset([out]))]
 
 _gomock_prog_exec = go_rule(
     _gomock_prog_exec_impl,
@@ -247,7 +272,7 @@ _gomock_prog_exec = go_rule(
             providers = [GoLibrary],
             mandatory = True,
         ),
-        "out": attr.output(
+        "out": attr.string(
             doc = "The new Go source file to put the generated mock code",
             mandatory = True,
         ),
