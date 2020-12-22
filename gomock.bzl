@@ -4,6 +4,12 @@ load("@io_bazel_rules_go//go/private:providers.bzl", "GoLibrary", "GoPath")
 _MOCKGEN_TOOL = "@com_github_golang_mock//mockgen"
 _MOCKGEN_MODEL_LIB = "@com_github_golang_mock//mockgen/model:go_default_library"
 
+def _create_dir_with_file(ctx, dirsuffix, filename):
+    dir = ctx.actions.declare_directory(ctx.label.name + dirsuffix)
+    ctx.actions.run_shell(outputs = [dir], arguments = [dir.path], command = "mkdir -m a+rwx -p $1")
+    file = ctx.actions.declare_file(dir.path + "/" + filename)
+    return (dir, file)
+
 def _gomock_source_impl(ctx):
     go_ctx = go_context(ctx)
     gopath = "$(pwd)/" + ctx.bin_dir.path + "/" + ctx.attr.gopath_dep[GoPath].gopath
@@ -26,14 +32,9 @@ def _gomock_source_impl(ctx):
         go_ctx.sdk.headers + go_ctx.sdk.srcs + go_ctx.sdk.tools
     ) + [ctx.file.source]
 
-    out_dir = ctx.actions.declare_directory(ctx.label.name + "-gomock_source.d")
-    ctx.actions.run_shell(outputs = [out_dir], arguments = [out_dir.path], command = "mkdir -v -m a+rwx -p $1")
-
-    out_name = ctx.attr.out
-    out = ctx.actions.declare_file(out_dir.path + "/" + out_name)
-
     # We can use the go binary from the stdlib for most of the environment
     # variables, but our GOPATH is specific to the library target we were given.
+    out_dir, out = _create_dir_with_file(ctx, "-gomock_source.d", ctx.attr.out)
     ctx.actions.run_shell(
         outputs = [out],
         inputs = inputs + [out_dir],
@@ -181,12 +182,7 @@ def _gomock_prog_gen_impl(ctx):
 
     cmd = ctx.file.mockgen_tool
 
-    out_dir = ctx.actions.declare_directory(ctx.label.name + "-gomock_prog_gen.d")
-    ctx.actions.run_shell(outputs = [out_dir], arguments = [out_dir.path], command = "mkdir -v -m a+rwx -p $1")
-
-    out_name = ctx.attr.out
-    out = ctx.actions.declare_file(out_dir.path + "/" + out_name)
-
+    out_dir, out = _create_dir_with_file(ctx, "-gomock_prog_gen.d", ctx.attr.out)
     ctx.actions.run_shell(
         outputs = [out],
         inputs = [out_dir],
@@ -240,12 +236,7 @@ def _gomock_prog_exec_impl(ctx):
     args += [ctx.attr.library[GoLibrary].importpath]
     args += [",".join(ctx.attr.interfaces)]
 
-    out_dir = ctx.actions.declare_directory(ctx.label.name + "-gomock_prog_exec.d")
-    ctx.actions.run_shell(outputs = [out_dir], arguments = [out_dir.path], command = "mkdir -v -m a+rwx -p $1")
-
-    out_name = ctx.attr.out
-    out = ctx.actions.declare_file(out_dir.path + "/" + out_name)
-
+    out_dir, out = _create_dir_with_file(ctx, "-gomock_prog_exec.d", ctx.attr.out)
     ctx.actions.run_shell(
         outputs = [out],
         inputs = [ctx.file.prog_bin] + needed_files + [out_dir],
