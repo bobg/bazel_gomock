@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_context", "go_path", "go_rule")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_context", "go_path")
 load("@io_bazel_rules_go//go/private:providers.bzl", "GoLibrary", "GoPath")
 
 _MOCKGEN_TOOL = "@com_github_golang_mock//mockgen"
@@ -64,7 +64,7 @@ def _gomock_source_impl(ctx):
 
     return [DefaultInfo(files = depset([out]))]
 
-_gomock_source = go_rule(
+_gomock_source = rule(
     _gomock_source_impl,
     attrs = {
         "library": attr.label(
@@ -79,6 +79,11 @@ _gomock_source = go_rule(
         ),
         "out": attr.string(
             doc = "The new Go file to emit the generated mocks into",
+            mandatory = True,
+        ),
+        "interfaces": attr.string_list(
+            allow_empty = False,
+            doc = "Ignored. If `source` is not set, this would be the list of Go interfaces to generate mocks for.",
             mandatory = True,
         ),
 	"aux_files": attr.string_list_dict(
@@ -116,7 +121,11 @@ _gomock_source = go_rule(
             cfg = "exec",
             mandatory = False,
         ),
+        "_go_context_data": attr.label(
+            default = "@io_bazel_rules_go//:go_context_data",
+        ),
     },
+    toolchains = ["@io_bazel_rules_go//go:toolchain"],
 )
 
 def gomock(name, library, out, **kwargs):
@@ -199,7 +208,7 @@ def _gomock_prog_gen_impl(ctx):
 
     return [DefaultInfo(files = depset([out]))]
 
-_gomock_prog_gen = go_rule(
+_gomock_prog_gen = rule(
     _gomock_prog_gen_impl,
     attrs = {
         "library": attr.label(
@@ -224,7 +233,11 @@ _gomock_prog_gen = go_rule(
             cfg = "exec",
             mandatory = False,
         ),
+        "_go_context_data": attr.label(
+            default = "@io_bazel_rules_go//:go_context_data",
+        ),
     },
+    toolchains = ["@io_bazel_rules_go//go:toolchain"],
 )
 
 def _gomock_prog_exec_impl(ctx):
@@ -255,7 +268,7 @@ def _gomock_prog_exec_impl(ctx):
 
     return [DefaultInfo(files = depset([out]))]
 
-_gomock_prog_exec = go_rule(
+_gomock_prog_exec = rule(
     _gomock_prog_exec_impl,
     attrs = {
         "library": attr.label(
@@ -304,8 +317,12 @@ _gomock_prog_exec = go_rule(
             executable = True,
             cfg = "exec",
             mandatory = False,
+	),
+        "_go_context_data": attr.label(
+            default = "@io_bazel_rules_go//:go_context_data",
         ),
     },
+    toolchains = ["@io_bazel_rules_go//go:toolchain"],
 )
 
 def _handle_shared_args(ctx, args):
