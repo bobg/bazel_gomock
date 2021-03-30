@@ -84,9 +84,9 @@ _gomock_source = rule(
         "interfaces": attr.string_list(
             allow_empty = False,
             doc = "Ignored. If `source` is not set, this would be the list of Go interfaces to generate mocks for.",
-            mandatory = True,
+            mandatory = False,
         ),
-	"aux_files": attr.string_list_dict(
+	    "aux_files": attr.string_list_dict(
             default = {},
             doc = "A map from packages to auxilliary Go source files to load for those packages.",
         ),
@@ -223,7 +223,7 @@ _gomock_prog_gen = rule(
         "interfaces": attr.string_list(
             allow_empty = False,
             doc = "The names of the Go interfaces to generate mocks for. If not set, all of the interfaces in the library or source file will have mocks generated for them.",
-            mandatory = True,
+            mandatory = False,
         ),
         "mockgen_tool": attr.label(
             doc = "The mockgen tool to run",
@@ -283,7 +283,7 @@ _gomock_prog_exec = rule(
         "interfaces": attr.string_list(
             allow_empty = False,
             doc = "The names of the Go interfaces to generate mocks for. If not set, all of the interfaces in the library or source file will have mocks generated for them.",
-            mandatory = True,
+            mandatory = False,
         ),
         "package": attr.string(
             doc = "The name of the package the generated mocks should be in. If not specified, uses mockgen's default.",
