@@ -82,7 +82,7 @@ _gomock_source = rule(
             mandatory = True,
         ),
         "interfaces": attr.string_list(
-            allow_empty = False,
+            allow_empty = True,
             doc = "Ignored. If `source` is not set, this would be the list of Go interfaces to generate mocks for.",
             mandatory = False,
         ),
@@ -221,7 +221,7 @@ _gomock_prog_gen = rule(
             mandatory = True,
         ),
         "interfaces": attr.string_list(
-            allow_empty = False,
+            allow_empty = True,
             doc = "The names of the Go interfaces to generate mocks for. If not set, all of the interfaces in the library or source file will have mocks generated for them.",
             mandatory = False,
         ),
@@ -281,7 +281,7 @@ _gomock_prog_exec = rule(
             mandatory = True,
         ),
         "interfaces": attr.string_list(
-            allow_empty = False,
+            allow_empty = True,
             doc = "The names of the Go interfaces to generate mocks for. If not set, all of the interfaces in the library or source file will have mocks generated for them.",
             mandatory = False,
         ),
